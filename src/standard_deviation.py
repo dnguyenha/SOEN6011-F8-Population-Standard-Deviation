@@ -1,8 +1,8 @@
 """Population standard deviation calculator using the two-pass algorithm."""
 
+def calculate_statistics(values):
+    """Calculate the arithmetic mean and population standard deviation."""
 
-def population_standard_deviation(values):
-    """Calculate the population standard deviation of a list of numbers."""
     mean = sum(values) / len(values)
 
     squared_difference_sum = 0.0
@@ -14,4 +14,4 @@ def population_standard_deviation(values):
     variance = squared_difference_sum / len(values)
     standard_deviation = variance ** 0.5
 
-    return standard_deviation
+    return mean, standard_deviation
