@@ -9,24 +9,32 @@ It provides a simple textual user interface for entering numerical values and ca
 
 ## Project Structure
 ```text
-SOEN6011_40341491/
+SOEN6011-F8-Population-Standard-Deviation/
 ├── src/
+│   ├── exceptions.py
+│   ├── gui.py
 │   ├── main.py
 │   └── standard_deviation.py
-├── docs/
-├── .gitignore
+└── textual_interface_archive/
+│   ├── main.py
+│   └── standard_deviation.py
+├── requirements.txt
 ├── README.md
-└── SOEN6011.code-workspace
+└── .gitignore
 ```
 
 ## Requirements
 - Python 3.13 or later
 
-## How to Run
+## Install the required dependency:
+```bash
+python -m pip install -r requirements.txt
+```
 
+## How to Run the Textual IF (archive)
 From the project root:
 ```bash
-python src/main.py
+python src/textual_interface_archive/main.py
 ```
 
 Example input:
@@ -40,4 +48,9 @@ Population Standard Deviation Calculator
 ----------------------------------------
 Number of revenue values: 5
 Population standard deviation: 14.14
+```
+
+## How to Run the GUI
+```bash
+python src/main.py
 ```

@@ -1,182 +1,358 @@
-"""Tkinter GUI for the population standard deviation calculator."""
+"""Tkinter GUI for selecting a date range and entering daily revenues."""
 
 import tkinter as tk
+from datetime import timedelta
 from tkinter import messagebox
 
-from exceptions import (
-    EmptyInputError,
-    InvalidNumberError,
-    NegativeValueError,
-)
-from standard_deviation import (
-    calculate_mean,
-    count_values,
-    population_standard_deviation,
-)
+from tkcalendar import DateEntry
+
+from exceptions import InvalidDayCountError
 
 
 class PopulationStandardDeviationGUI:
-    """Graphical user interface for the calculator."""
+    """Graphical interface for the population standard deviation calculator."""
+
+    MINIMUM_DAYS = 1
+    MAXIMUM_DAYS = 31
 
     def __init__(self):
-        """Create and configure the main window."""
+        """Create and configure the main application window."""
         self.window = tk.Tk()
         self.window.title("Population Standard Deviation Calculator")
-        self.window.geometry("620x430")
-        self.window.resizable(False, False)
+        self.window.geometry("760x680")
+        self.window.minsize(700, 600)
+
+        self.revenue_entries = []
 
         self.create_widgets()
 
     def create_widgets(self):
-        """Create the interface components."""
+        """Create the main interface components."""
         title_label = tk.Label(
             self.window,
-            text="Population Standard Deviation Calculator",
-            font=("Arial", 16, "bold"),
+            text="Daily Rental Revenue Calculator",
+            font=("Arial", 18, "bold"),
         )
-        title_label.pack(pady=(20, 10))
+        title_label.pack(pady=(20, 5))
 
         instruction_label = tk.Label(
             self.window,
             text=(
-                "Enter daily rental revenues separated by spaces.\n"
-                "Example: 100 120 80 110 90"
+                "Select a start date and enter the number of days "
+                "for the calculation."
             ),
             font=("Arial", 10),
         )
-        instruction_label.pack(pady=5)
+        instruction_label.pack(pady=(0, 15))
 
-        self.input_entry = tk.Entry(
+        selection_frame = tk.LabelFrame(
             self.window,
-            width=60,
-            font=("Arial", 11),
+            text="Calculation Period",
+            padx=15,
+            pady=12,
         )
-        self.input_entry.pack(pady=12)
-        self.input_entry.focus()
-
-        button_frame = tk.Frame(self.window)
-        button_frame.pack(pady=5)
-
-        calculate_button = tk.Button(
-            button_frame,
-            text="Calculate",
-            width=12,
-            command=self.calculate,
+        selection_frame.pack(
+            fill="x",
+            padx=25,
+            pady=5,
         )
-        calculate_button.grid(row=0, column=0, padx=5)
+
+        start_date_label = tk.Label(
+            selection_frame,
+            text="Start date:",
+            font=("Arial", 10),
+        )
+        start_date_label.grid(
+            row=0,
+            column=0,
+            padx=8,
+            pady=8,
+            sticky="e",
+        )
+
+        self.start_date_entry = DateEntry(
+            selection_frame,
+            width=16,
+            date_pattern="yyyy-mm-dd",
+            state="readonly",
+        )
+        self.start_date_entry.grid(
+            row=0,
+            column=1,
+            padx=8,
+            pady=8,
+            sticky="w",
+        )
+
+        number_of_days_label = tk.Label(
+            selection_frame,
+            text="Number of days:",
+            font=("Arial", 10),
+        )
+        number_of_days_label.grid(
+            row=0,
+            column=2,
+            padx=8,
+            pady=8,
+            sticky="e",
+        )
+
+        self.number_of_days_entry = tk.Entry(
+            selection_frame,
+            width=8,
+            justify="center",
+        )
+        self.number_of_days_entry.grid(
+            row=0,
+            column=3,
+            padx=8,
+            pady=8,
+            sticky="w",
+        )
+        self.number_of_days_entry.insert(0, "7")
+
+        generate_button = tk.Button(
+            selection_frame,
+            text="Generate Days",
+            width=15,
+            command=self.generate_days,
+        )
+        generate_button.grid(
+            row=0,
+            column=4,
+            padx=10,
+            pady=8,
+        )
+
+        selection_frame.columnconfigure(4, weight=1)
+
+        self.period_label = tk.Label(
+            self.window,
+            text="No calculation period generated.",
+            font=("Arial", 10, "italic"),
+        )
+        self.period_label.pack(pady=(10, 5))
+
+        revenue_container = tk.LabelFrame(
+            self.window,
+            text="Daily Revenue",
+            padx=10,
+            pady=10,
+        )
+        revenue_container.pack(
+            fill="both",
+            expand=True,
+            padx=25,
+            pady=10,
+        )
+
+        self.canvas = tk.Canvas(
+            revenue_container,
+            highlightthickness=0,
+        )
+
+        scrollbar = tk.Scrollbar(
+            revenue_container,
+            orient="vertical",
+            command=self.canvas.yview,
+        )
+
+        self.revenue_frame = tk.Frame(self.canvas)
+
+        self.revenue_frame.bind( "<Configure>", self.update_scroll_region)
+
+        self.canvas_window = self.canvas.create_window(
+            (0, 0),
+            window=self.revenue_frame,
+            anchor="nw",
+        )
+
+        self.canvas.bind("<Configure>", self.resize_revenue_frame)
+
+        self.canvas.configure(yscrollcommand=scrollbar.set)
+
+        self.canvas.pack(side="left", fill="both", expand=True)
+
+        scrollbar.pack(side="right", fill="y")
+
+        placeholder_label = tk.Label(
+            self.revenue_frame,
+            text=("Select a start date and number of days, then click Generate Days."),
+            font=("Arial", 10),
+        )
+        placeholder_label.pack(pady=30)
+
+        action_frame = tk.Frame(self.window)
+        action_frame.pack(pady=(0, 20))
 
         clear_button = tk.Button(
-            button_frame,
+            action_frame,
             text="Clear",
             width=12,
-            command=self.clear,
+            command=self.clear_generated_days,
         )
-        clear_button.grid(row=0, column=1, padx=5)
+        clear_button.grid(row=0, column=0, padx=5)
 
         exit_button = tk.Button(
-            button_frame,
+            action_frame,
             text="Exit",
             width=12,
             command=self.window.destroy,
         )
-        exit_button.grid(row=0, column=2, padx=5)
+        exit_button.grid(row=0, column=1, padx=5)
 
-        result_label = tk.Label(
-            self.window,
-            text="Results",
-            font=("Arial", 12, "bold"),
-        )
-        result_label.pack(pady=(20, 5))
-
-        self.result_text = tk.Text(
-            self.window,
-            width=68,
-            height=10,
-            font=("Courier New", 10),
-            state="disabled",
-        )
-        self.result_text.pack(padx=20, pady=5)
-
-    def parse_revenue_values(self):
+    def get_number_of_days(self):
         """
-        Read and validate revenue values from the input field.
+        Read and validate the requested number of days.
 
         Returns:
-            list[float]: Validated revenue values.
+            int: A valid number of days from 1 to 31.
 
         Raises:
-            EmptyInputError: If no input is provided.
-            InvalidNumberError: If an item is not numerical.
-            NegativeValueError: If a value is negative.
+            InvalidDayCountError: If the value is missing or invalid.
         """
-        user_input = self.input_entry.get().strip()
+        user_input = self.number_of_days_entry.get().strip()
 
         if user_input == "":
-            raise EmptyInputError("Enter at least one revenue value.")
+            raise InvalidDayCountError("Enter the number of days for the calculation.")
 
-        values = []
-
-        for item in user_input.split():
-            try:
-                value = float(item)
-            except ValueError as error:
-                raise InvalidNumberError(f"'{item}' is not a valid numerical value.") from error
-
-            if value < 0:
-                raise NegativeValueError(f"Revenue cannot be negative: {value:.2f}")
-
-            values.append(value)
-
-        return values
-
-    def calculate(self):
-        """Calculate and display the population statistics."""
         try:
-            revenues = self.parse_revenue_values()
+            number_of_days = int(user_input)
+        except ValueError as error:
+            raise InvalidDayCountError(
+                "The number of days must be a whole number "
+                "between 1 and 31."
+            ) from error
 
-            mean = calculate_mean(revenues)
-            standard_deviation = (population_standard_deviation(revenues))
+        if (number_of_days < self.MINIMUM_DAYS or number_of_days > self.MAXIMUM_DAYS):
+            raise InvalidDayCountError("The number of days must be between 1 and 31.")
 
-            formatted_values = " ".join(f"{value:.2f}" for value in revenues)
+        return number_of_days
 
-            result = (
-                f"Revenue values:\n"
-                f"{formatted_values}\n\n"
-                f"Number of values: {count_values(revenues)}\n"
-                f"Arithmetic mean: {mean:.2f}\n"
-                f"Population standard deviation: "
-                f"{standard_deviation:.2f}"
+    def generate_days(self):
+        """Generate one revenue field for each date in the selected period."""
+        try:
+            number_of_days = self.get_number_of_days()
+        except InvalidDayCountError as error:
+            messagebox.showerror("Invalid Calculation Period", str(error))
+            return
+
+        self.clear_revenue_frame()
+
+        start_date = self.start_date_entry.get_date()
+        end_date = start_date + timedelta(days=number_of_days - 1)
+
+        header_date_label = tk.Label(
+            self.revenue_frame,
+            text="Date",
+            font=("Arial", 10, "bold"),
+            width=30,
+            anchor="w",
+        )
+        header_date_label.grid(
+            row=0,
+            column=0,
+            padx=10,
+            pady=(5, 8),
+            sticky="w",
+        )
+
+        header_revenue_label = tk.Label(
+            self.revenue_frame,
+            text="Revenue ($)",
+            font=("Arial", 10, "bold"),
+            width=15,
+        )
+        header_revenue_label.grid(
+            row=0,
+            column=1,
+            padx=10,
+            pady=(5, 8),
+        )
+
+        self.revenue_entries = []
+
+        for day_offset in range(number_of_days):
+            current_date = start_date + timedelta(days=day_offset)
+
+            date_label = tk.Label(
+                self.revenue_frame,
+                text=current_date.strftime(
+                    "%A, %B %d, %Y"
+                ),
+                font=("Arial", 10),
+                anchor="w",
+                width=30,
+            )
+            date_label.grid(
+                row=day_offset + 1,
+                column=0,
+                padx=10,
+                pady=4,
+                sticky="w",
             )
 
-            self.display_result(result)
-
-        except (
-            EmptyInputError,
-            InvalidNumberError,
-            NegativeValueError,
-        ) as error:
-            messagebox.showerror(
-                "Input Error",
-                str(error),
+            revenue_entry = tk.Entry(
+                self.revenue_frame,
+                width=16,
+                justify="right",
+            )
+            revenue_entry.grid(
+                row=day_offset + 1,
+                column=1,
+                padx=10,
+                pady=4,
             )
 
-    def display_result(self, result):
-        """Display text in the result area."""
-        self.result_text.config(state="normal")
-        self.result_text.delete("1.0", tk.END)
-        self.result_text.insert(tk.END, result)
-        self.result_text.config(state="disabled")
+            self.revenue_entries.append(
+                {
+                    "date": current_date,
+                    "entry": revenue_entry,
+                }
+            )
 
-    def clear(self):
-        """Clear the input and result fields."""
-        self.input_entry.delete(0, tk.END)
+        self.period_label.config(
+            text=(
+                f"Calculation period: "
+                f"{start_date.strftime('%B %d, %Y')} to "
+                f"{end_date.strftime('%B %d, %Y')} "
+                f"({number_of_days} days)"
+            )
+        )
 
-        self.result_text.config(state="normal")
-        self.result_text.delete("1.0", tk.END)
-        self.result_text.config(state="disabled")
+        if self.revenue_entries:
+            self.revenue_entries[0]["entry"].focus()
 
-        self.input_entry.focus()
+        self.canvas.yview_moveto(0)
+
+    def clear_revenue_frame(self):
+        """Remove all widgets from the generated revenue area."""
+        for widget in self.revenue_frame.winfo_children():
+            widget.destroy()
+
+        self.revenue_entries = []
+
+    def clear_generated_days(self):
+        """Clear generated dates and restore the placeholder message."""
+        self.clear_revenue_frame()
+
+        placeholder_label = tk.Label(
+            self.revenue_frame,
+            text=("Select a start date and number of days, then click Generate Days."),
+            font=("Arial", 10),
+        )
+        placeholder_label.pack(pady=30)
+
+        self.period_label.config(text="No calculation period generated.")
+
+    def update_scroll_region(self, _event):
+        """Update the canvas scrollable region."""
+        self.canvas.configure(scrollregion=self.canvas.bbox("all"))
+
+    def resize_revenue_frame(self, event):
+        """Resize the inner frame to match the canvas width."""
+        self.canvas.itemconfigure(self.canvas_window, width=event.width,)
 
     def run(self):
-        """Start the Tkinter event loop."""
+        """Start the Tkinter application loop."""
         self.window.mainloop()

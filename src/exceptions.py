@@ -1,11 +1,11 @@
 """Custom exceptions for the population standard deviation application."""
 
 
-class EmptyInputError(Exception):
-    """Raised when the user provides no input."""
+class InvalidDayCountError(Exception):
+    """Raised when the calculation period is invalid."""
 
 class InvalidNumberError(Exception):
-    """Raised when the user enters a non-numerical value."""
+    """Raised when a revenue entry is not numerical."""
 
 class NegativeValueError(Exception):
-    """Raised when the user enters a negative revenue value."""
+    """Raised when a revenue entry is negative."""
