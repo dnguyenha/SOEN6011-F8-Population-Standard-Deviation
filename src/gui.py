@@ -83,7 +83,6 @@ class PopulationStandardDeviationGUI:
             selection_frame,
             width=16,
             date_pattern="yyyy-mm-dd",
-            state="readonly",
         )
         self.start_date_entry.grid(
             row=0,
