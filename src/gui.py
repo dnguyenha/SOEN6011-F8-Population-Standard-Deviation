@@ -3,10 +3,18 @@
 import tkinter as tk
 from datetime import timedelta
 from tkinter import messagebox
-
 from tkcalendar import DateEntry
-
-from exceptions import InvalidDayCountError
+from exceptions import (
+    InvalidDayCountError,
+    InvalidNumberError,
+    NegativeValueError,
+)
+from standard_deviation import (
+    calculate_mean,
+    calculate_sum,
+    count_values,
+    population_standard_deviation,
+)
 
 
 class PopulationStandardDeviationGUI:
@@ -19,7 +27,7 @@ class PopulationStandardDeviationGUI:
         """Create and configure the main application window."""
         self.window = tk.Tk()
         self.window.title("Population Standard Deviation Calculator")
-        self.window.geometry("760x680")
+        self.window.geometry("760x760")
         self.window.minsize(700, 600)
 
         self.revenue_entries = []
@@ -45,6 +53,7 @@ class PopulationStandardDeviationGUI:
         )
         instruction_label.pack(pady=(0, 15))
 
+        ## Selection Frame
         selection_frame = tk.LabelFrame(
             self.window,
             text="Calculation Period",
@@ -182,16 +191,33 @@ class PopulationStandardDeviationGUI:
         )
         placeholder_label.pack(pady=30)
 
+        ## Action Frame
         action_frame = tk.Frame(self.window)
-        action_frame.pack(pady=(0, 20))
+        action_frame.pack(pady=(0, 10))
 
-        clear_button = tk.Button(
+        calculate_button = tk.Button(
             action_frame,
-            text="Clear",
+            text="Calculate",
+            width=12,
+            command=self.calculate,
+        )
+        calculate_button.grid(row=0, column=0, padx=5)
+
+        clear_revenue_button = tk.Button(
+            action_frame,
+            text="Clear Revenue",
+            width=12,
+            command=self.clear_revenue_values,
+        )
+        clear_revenue_button.grid(row=0, column=1, padx=5)
+
+        reset_button = tk.Button(
+            action_frame,
+            text="Reset",
             width=12,
             command=self.clear_generated_days,
         )
-        clear_button.grid(row=0, column=0, padx=5)
+        reset_button.grid(row=0, column=2, padx=5)
 
         exit_button = tk.Button(
             action_frame,
@@ -199,7 +225,29 @@ class PopulationStandardDeviationGUI:
             width=12,
             command=self.window.destroy,
         )
-        exit_button.grid(row=0, column=1, padx=5)
+        exit_button.grid(row=0, column=3, padx=5)
+
+        ## Result Frame
+        result_frame = tk.LabelFrame(
+        self.window,
+        text="Calculation Results",
+        padx=15,
+        pady=10,
+    )
+        result_frame.pack(
+            fill="x",
+            padx=25,
+            pady=(0, 20),
+        )
+
+        self.result_label = tk.Label(
+            result_frame,
+            text="Generate a calculation period and enter revenue values.",
+            font=("Arial", 10),
+            justify="left",
+            anchor="w",
+        )
+        self.result_label.pack(fill="x")
 
     def get_number_of_days(self):
         """
@@ -228,6 +276,55 @@ class PopulationStandardDeviationGUI:
             raise InvalidDayCountError("The number of days must be between 1 and 31.")
 
         return number_of_days
+
+    def get_revenue_values(self):
+        """
+        Read and validate generated daily revenue fields.
+
+        Blank fields are interpreted as zero.
+
+        Returns:
+            list[float]: Revenue values for all generated dates.
+
+        Raises:
+            InvalidDayCountError: If no dates have been generated.
+            InvalidNumberError: If an entered value is not numerical.
+            NegativeValueError: If an entered value is negative.
+        """
+        if count_values(self.revenue_entries) == 0:
+            raise InvalidDayCountError(
+                "Generate the calculation period before calculating."
+            )
+
+        revenues = []
+
+        for revenue_item in self.revenue_entries:
+            current_date = revenue_item["date"]
+            entry = revenue_item["entry"]
+            user_input = entry.get().strip()
+
+            if user_input == "":
+                revenue = 0.0
+            else:
+                try:
+                    revenue = float(user_input)
+                except ValueError as error:
+                    raise InvalidNumberError(
+                        f"Revenue for "
+                        f"{current_date.strftime('%A, %B %d, %Y')} "
+                        f"must be a number or left blank."
+                    ) from error
+
+            if revenue < 0:
+                raise NegativeValueError(
+                    f"Revenue for "
+                    f"{current_date.strftime('%A, %B %d, %Y')} "
+                    f"cannot be negative."
+                )
+
+            revenues.append(revenue)
+
+        return revenues
 
     def generate_days(self):
         """Generate one revenue field for each date in the selected period."""
@@ -325,6 +422,64 @@ class PopulationStandardDeviationGUI:
 
         self.canvas.yview_moveto(0)
 
+    def calculate(self):
+        """Calculate and display statistics for the generated period."""
+        try:
+            revenues = self.get_revenue_values()
+
+            number_of_days = count_values(revenues)
+            total_revenue = calculate_sum(revenues)
+            mean = calculate_mean(revenues)
+            standard_deviation = (
+                population_standard_deviation(revenues)
+            )
+
+            start_date = self.revenue_entries[0]["date"]
+            end_date = self.revenue_entries[
+                number_of_days - 1
+            ]["date"]
+
+            result = (
+                f"Period: "
+                f"{start_date.strftime('%B %d, %Y')} to "
+                f"{end_date.strftime('%B %d, %Y')}\n"
+                f"Number of days: {number_of_days}\n"
+                f"Total revenue: ${total_revenue:.2f}\n"
+                f"Average daily revenue: ${mean:.2f}\n"
+                f"Population standard deviation: "
+                f"${standard_deviation:.2f}"
+            )
+
+            self.result_label.config(text=result)
+
+        except (
+            InvalidDayCountError,
+            InvalidNumberError,
+            NegativeValueError,
+        ) as error:
+            messagebox.showerror(
+                "Calculation Error",
+                str(error),
+            )
+
+    def clear_revenue_values(self):
+        """Clear entered revenues while keeping the generated dates."""
+        if count_values(self.revenue_entries) == 0:
+            messagebox.showinfo(
+                "No Generated Period",
+                "Generate the calculation period before clearing revenue values.",
+            )
+            return
+
+        for revenue_item in self.revenue_entries:
+            revenue_item["entry"].delete(0, tk.END)
+
+        self.result_label.config(
+            text="Enter revenue values and select Calculate."
+        )
+
+        self.revenue_entries[0]["entry"].focus()
+
     def clear_revenue_frame(self):
         """Remove all widgets from the generated revenue area."""
         for widget in self.revenue_frame.winfo_children():
@@ -344,6 +499,8 @@ class PopulationStandardDeviationGUI:
         placeholder_label.pack(pady=30)
 
         self.period_label.config(text="No calculation period generated.")
+
+        self.result_label.config(text="Generate a calculation period and enter revenue values.")
 
     def update_scroll_region(self, _event):
         """Update the canvas scrollable region."""
