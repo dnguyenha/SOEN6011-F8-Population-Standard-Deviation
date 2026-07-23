@@ -60,11 +60,7 @@ class PopulationStandardDeviationGUI:
             padx=15,
             pady=12,
         )
-        selection_frame.pack(
-            fill="x",
-            padx=25,
-            pady=5,
-        )
+        selection_frame.pack(fill="x", padx=25, pady=5)
 
         start_date_label = tk.Label(
             selection_frame,
@@ -147,11 +143,7 @@ class PopulationStandardDeviationGUI:
             padx=10,
             pady=10,
         )
-        revenue_container.pack(
-            fill="x",
-            padx=25,
-            pady=8,
-        )
+        revenue_container.pack(fill="x", padx=25, pady=8)
 
         self.canvas = tk.Canvas(
             revenue_container,
@@ -210,15 +202,9 @@ class PopulationStandardDeviationGUI:
             padx=20,
             pady=12,
         )
-        result_frame.pack(
-            fill="x",
-            padx=25,
-            pady=(0, 10),
-        )
+        result_frame.pack(fill="x", padx=25, pady=(0, 10))
 
-        self.period_result = tk.StringVar(
-            value="No calculation has been performed."
-        )
+        self.period_result = tk.StringVar(value="No calculation has been performed.")
         self.days_result = tk.StringVar(value="—")
         self.total_result = tk.StringVar(value="—")
         self.mean_result = tk.StringVar(value="—")
@@ -242,10 +228,7 @@ class PopulationStandardDeviationGUI:
             ("Number of days:", self.days_result),
             ("Total revenue:", self.total_result),
             ("Average daily revenue:", self.mean_result),
-            (
-                "Population standard deviation:",
-                self.standard_deviation_result,
-            ),
+            ("Population standard deviation:", self.standard_deviation_result,),
         ]
 
         for row_number, (label_text, result_variable) in enumerate(
@@ -292,11 +275,7 @@ class PopulationStandardDeviationGUI:
             width=14,
             command=self.clear_revenue_values,
         )
-        clear_revenue_button.grid(
-            row=0,
-            column=0,
-            padx=5,
-        )
+        clear_revenue_button.grid(row=0, column=0, padx=5)
 
         reset_button = tk.Button(
             secondary_action_frame,
@@ -304,11 +283,7 @@ class PopulationStandardDeviationGUI:
             width=14,
             command=self.clear_generated_days,
         )
-        reset_button.grid(
-            row=0,
-            column=1,
-            padx=5,
-        )
+        reset_button.grid(row=0, column=1, padx=5)
 
         exit_button = tk.Button(
             secondary_action_frame,
@@ -316,11 +291,7 @@ class PopulationStandardDeviationGUI:
             width=14,
             command=self.window.destroy,
         )
-        exit_button.grid(
-            row=0,
-            column=2,
-            padx=5,
-        )
+        exit_button.grid(row=0, column=2, padx=5)
 
     def get_number_of_days(self):
         """
@@ -341,8 +312,7 @@ class PopulationStandardDeviationGUI:
             number_of_days = int(user_input)
         except ValueError as error:
             raise InvalidDayCountError(
-                "The number of days must be a whole number "
-                "between 1 and 31."
+                "The number of days must be a whole number between 1 and 31."
             ) from error
 
         if (number_of_days < self.MINIMUM_DAYS or number_of_days > self.MAXIMUM_DAYS):
@@ -463,11 +433,7 @@ class PopulationStandardDeviationGUI:
                 sticky="w",
             )
 
-            revenue_entry = tk.Entry(
-                self.revenue_frame,
-                width=16,
-                justify="right",
-            )
+            revenue_entry = tk.Entry(self.revenue_frame, width=16, justify="right")
             revenue_entry.grid(
                 row=day_offset + 1,
                 column=1,
