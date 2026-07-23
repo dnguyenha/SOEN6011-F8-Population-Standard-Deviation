@@ -2,7 +2,7 @@
 This project implements **F8: Population Standard Deviation** in Python using the **Two-Pass Algorithm**. 
 It provides a simple textual user interface for entering numerical values and calculating the population standard deviation.
 
-**Author:** Ha Dao  
+**Author:** Nguyen Ha Dao  
 **Student ID:** 40341491  
 **Course:** SOEN 6011 – Software Engineering Processes  
 **Semester:** Summer 2026
