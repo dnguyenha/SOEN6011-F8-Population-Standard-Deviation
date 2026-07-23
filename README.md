@@ -1,10 +1,8 @@
 # SOEN 6011 – Population Standard Deviation Calculator
-This project implements **F8: Population Standard Deviation** for **SOEN 6011 – Software Engineering Processes**.
+This project implements **F8: Population Standard Deviation** in Python using the **Two-Pass Algorithm**. 
+It provides a simple textual user interface for entering numerical values and calculating the population standard deviation.
 
-The application calculates the **population standard deviation** using the **Two-Pass Algorithm** implemented **from scratch in Python** (without using Python statistical libraries). A graphical user interface (GUI) developed with **Tkinter** allows users to select a calculation period, enter daily rental revenues, and view the calculated statistics.
-
-
-**Author:** Nguyen Ha Dao  
+**Author:** Ha Dao  
 **Student ID:** 40341491  
 **Course:** SOEN 6011 – Software Engineering Processes  
 **Semester:** Summer 2026
