@@ -27,8 +27,8 @@ class PopulationStandardDeviationGUI:
         """Create and configure the main application window."""
         self.window = tk.Tk()
         self.window.title("Population Standard Deviation Calculator")
-        self.window.geometry("760x760")
-        self.window.minsize(700, 600)
+        self.window.geometry("800x820")
+        self.window.minsize(760, 750)
 
         self.revenue_entries = []
 
@@ -148,14 +148,14 @@ class PopulationStandardDeviationGUI:
             pady=10,
         )
         revenue_container.pack(
-            fill="both",
-            expand=True,
+            fill="x",
             padx=25,
-            pady=10,
+            pady=8,
         )
 
         self.canvas = tk.Canvas(
             revenue_container,
+            height=245,
             highlightthickness=0,
         )
 
@@ -190,63 +190,137 @@ class PopulationStandardDeviationGUI:
         )
         placeholder_label.pack(pady=30)
 
-        ## Action Frame
-        action_frame = tk.Frame(self.window)
-        action_frame.pack(pady=(0, 10))
+        ## Primary Action Frame
+        primary_action_frame = tk.Frame(self.window)
+        primary_action_frame.pack(pady=(5, 10))
 
         calculate_button = tk.Button(
-            action_frame,
+            primary_action_frame,
             text="Calculate",
-            width=12,
+            width=18,
+            font=("Arial", 10, "bold"),
             command=self.calculate,
         )
-        calculate_button.grid(row=0, column=0, padx=5)
-
-        clear_revenue_button = tk.Button(
-            action_frame,
-            text="Clear Revenue",
-            width=12,
-            command=self.clear_revenue_values,
-        )
-        clear_revenue_button.grid(row=0, column=1, padx=5)
-
-        reset_button = tk.Button(
-            action_frame,
-            text="Reset",
-            width=12,
-            command=self.clear_generated_days,
-        )
-        reset_button.grid(row=0, column=2, padx=5)
-
-        exit_button = tk.Button(
-            action_frame,
-            text="Exit",
-            width=12,
-            command=self.window.destroy,
-        )
-        exit_button.grid(row=0, column=3, padx=5)
+        calculate_button.pack()
 
         ## Result Frame
         result_frame = tk.LabelFrame(
-        self.window,
-        text="Calculation Results",
-        padx=15,
-        pady=10,
-    )
+            self.window,
+            text="Calculation Results",
+            padx=20,
+            pady=12,
+        )
         result_frame.pack(
             fill="x",
             padx=25,
-            pady=(0, 20),
+            pady=(0, 10),
         )
 
-        self.result_label = tk.Label(
+        self.period_result = tk.StringVar(
+            value="No calculation has been performed."
+        )
+        self.days_result = tk.StringVar(value="—")
+        self.total_result = tk.StringVar(value="—")
+        self.mean_result = tk.StringVar(value="—")
+        self.standard_deviation_result = tk.StringVar(value="—")
+
+        period_label = tk.Label(
             result_frame,
-            text="Generate a calculation period and enter revenue values.",
-            font=("Arial", 10),
-            justify="left",
+            textvariable=self.period_result,
+            font=("Arial", 10, "italic"),
             anchor="w",
         )
-        self.result_label.pack(fill="x")
+        period_label.grid(
+            row=0,
+            column=0,
+            columnspan=2,
+            sticky="w",
+            pady=(0, 10),
+        )
+
+        result_labels = [
+            ("Number of days:", self.days_result),
+            ("Total revenue:", self.total_result),
+            ("Average daily revenue:", self.mean_result),
+            (
+                "Population standard deviation:",
+                self.standard_deviation_result,
+            ),
+        ]
+
+        for row_number, (label_text, result_variable) in enumerate(
+            result_labels,
+            start=1,
+        ):
+            description_label = tk.Label(
+                result_frame,
+                text=label_text,
+                font=("Arial", 10),
+                anchor="w",
+            )
+            description_label.grid(
+                row=row_number,
+                column=0,
+                padx=(0, 25),
+                pady=3,
+                sticky="w",
+            )
+
+            value_label = tk.Label(
+                result_frame,
+                textvariable=result_variable,
+                font=("Arial", 10, "bold"),
+                anchor="e",
+            )
+            value_label.grid(
+                row=row_number,
+                column=1,
+                pady=3,
+                sticky="e",
+            )
+
+        result_frame.columnconfigure(0, weight=1)
+        result_frame.columnconfigure(1, weight=1)
+
+        ## Secondary Action Frame
+        secondary_action_frame = tk.Frame(self.window)
+        secondary_action_frame.pack(pady=(0, 15))
+
+        clear_revenue_button = tk.Button(
+            secondary_action_frame,
+            text="Clear Revenue",
+            width=14,
+            command=self.clear_revenue_values,
+        )
+        clear_revenue_button.grid(
+            row=0,
+            column=0,
+            padx=5,
+        )
+
+        reset_button = tk.Button(
+            secondary_action_frame,
+            text="Reset",
+            width=14,
+            command=self.clear_generated_days,
+        )
+        reset_button.grid(
+            row=0,
+            column=1,
+            padx=5,
+        )
+
+        exit_button = tk.Button(
+            secondary_action_frame,
+            text="Exit",
+            width=14,
+            command=self.window.destroy,
+        )
+        exit_button.grid(
+            row=0,
+            column=2,
+            padx=5,
+        )
 
     def get_number_of_days(self):
         """
@@ -334,6 +408,7 @@ class PopulationStandardDeviationGUI:
             return
 
         self.clear_revenue_frame()
+        self.clear_results()
 
         start_date = self.start_date_entry.get_date()
         end_date = start_date + timedelta(days=number_of_days - 1)
@@ -355,7 +430,7 @@ class PopulationStandardDeviationGUI:
 
         header_revenue_label = tk.Label(
             self.revenue_frame,
-            text="Revenue ($)",
+            text="Revenue (CAD)",
             font=("Arial", 10, "bold"),
             width=15,
         )
@@ -429,37 +504,24 @@ class PopulationStandardDeviationGUI:
             number_of_days = count_values(revenues)
             total_revenue = calculate_sum(revenues)
             mean = calculate_mean(revenues)
-            standard_deviation = (
-                population_standard_deviation(revenues)
-            )
+            standard_deviation = (population_standard_deviation(revenues))
 
             start_date = self.revenue_entries[0]["date"]
-            end_date = self.revenue_entries[
-                number_of_days - 1
-            ]["date"]
+            end_date = self.revenue_entries[number_of_days - 1]["date"]
 
-            result = (
-                f"Period: "
+            self.period_result.set(
                 f"{start_date.strftime('%B %d, %Y')} to "
-                f"{end_date.strftime('%B %d, %Y')}\n"
-                f"Number of days: {number_of_days}\n"
-                f"Total revenue: ${total_revenue:.2f}\n"
-                f"Average daily revenue: ${mean:.2f}\n"
-                f"Population standard deviation: "
-                f"${standard_deviation:.2f}"
+                f"{end_date.strftime('%B %d, %Y')}"
+            )
+            self.days_result.set(str(number_of_days))
+            self.total_result.set(f"${total_revenue:.2f} CAD")
+            self.mean_result.set(f"${mean:.2f} CAD")
+            self.standard_deviation_result.set(
+                f"${standard_deviation:.2f} CAD"
             )
 
-            self.result_label.config(text=result)
-
-        except (
-            InvalidDayCountError,
-            InvalidNumberError,
-            NegativeValueError,
-        ) as error:
-            messagebox.showerror(
-                "Calculation Error",
-                str(error),
-            )
+        except (InvalidDayCountError, InvalidNumberError, NegativeValueError) as error:
+            messagebox.showerror("Calculation Error", str(error))
 
     def clear_revenue_values(self):
         """Clear entered revenues while keeping the generated dates."""
@@ -473,9 +535,7 @@ class PopulationStandardDeviationGUI:
         for revenue_item in self.revenue_entries:
             revenue_item["entry"].delete(0, tk.END)
 
-        self.result_label.config(
-            text="Enter revenue values and select Calculate."
-        )
+        self.clear_results()
 
         self.revenue_entries[0]["entry"].focus()
 
@@ -499,7 +559,15 @@ class PopulationStandardDeviationGUI:
 
         self.period_label.config(text="No calculation period generated.")
 
-        self.result_label.config(text="Generate a calculation period and enter revenue values.")
+        self.clear_results()
+
+    def clear_results(self):
+        """Restore the result display to its initial state."""
+        self.period_result.set("No calculation has been performed.")
+        self.days_result.set("—")
+        self.total_result.set("—")
+        self.mean_result.set("—")
+        self.standard_deviation_result.set("—")
 
     def update_scroll_region(self, _event):
         """Update the canvas scrollable region."""
